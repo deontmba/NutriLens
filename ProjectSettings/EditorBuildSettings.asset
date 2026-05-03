@@ -14,6 +14,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/OnboardingTutorial.unity
     guid: 745ebbf5e60525f40b340001d51db941
+  - enabled: 1
+    path: Assets/Scenes/OnboardingColorGuide.unity
+    guid: 1148d923ca05e9542b41c88200687dda
+  - enabled: 1
+    path: Assets/Scenes/Home.unity
+    guid: 3cc9457cd3e3b974ba3c91c4fbae6cde
   m_configObjects:
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: f4bfcf1bbe5c96847979ed6f8cd0a9c7, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
