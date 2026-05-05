@@ -2,13 +2,15 @@ using UnityEngine;
 using System.Collections;
 using System.IO;
 using Vuforia;
+using UnityEngine.UI;
 
 public class VuforiaSnapshot : MonoBehaviour
 {
     [Header("Referensi Objek")]
     public Canvas uiCanvas;
     public Camera arCamera;
-
+    public Button snapshotButton;
+    private bool isProcessing = false;  
     void Start()
     {
         VuforiaApplication.Instance.OnVuforiaStarted += InitializeVuforiaCamera;
@@ -21,11 +23,16 @@ public class VuforiaSnapshot : MonoBehaviour
 
     public void TakeAShot()
     {
-        StartCoroutine(CaptureScreen());
+        // Prevent multiple clicks
+        if (isProcessing) return;
+        
+        StartCoroutine(CaptureAndProcess());
     }
 
-    private IEnumerator CaptureScreen()
+    private IEnumerator CaptureAndProcess()
     {
+        isProcessing = true;
+        SetUILoading(true);
         if (uiCanvas != null) uiCanvas.enabled = false;
         yield return new WaitForEndOfFrame();
 
@@ -119,5 +126,29 @@ public class VuforiaSnapshot : MonoBehaviour
 
         if (uiCanvas != null) uiCanvas.enabled = true;
         Debug.Log("Disimpan di:\n" + filePath);
+
+        // --- Placeholder for OCR ---
+        Debug.Log("Snapshot taken. Starting OCR simulation...");
+        // We simulate OCR taking 2 seconds
+        yield return new WaitForSeconds(2.0f); 
+
+        // --- PHASE 3: Cleanup ---
+        if (uiCanvas != null) uiCanvas.enabled = true;
+        
+        isProcessing = false;
+        SetUILoading(false);
+        
+        Debug.Log("OCR Finished. Button is now clickable again.");
     }
+
+    private void SetUILoading(bool isLoading)
+    {
+        if (snapshotButton != null)
+        {
+            // Disable the button so it can't be clicked
+            snapshotButton.interactable = !isLoading;
+        }
+    }
+
+    // TODO: instead of saving the snapshot byte, we directly process it to OCR
 }
