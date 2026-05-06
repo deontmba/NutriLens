@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: VuforiaConfiguration
   m_EditorClassIdentifier: Vuforia.Unity.Engine.dll::Vuforia.VuforiaConfiguration
   vuforia:
-    vuforiaLicenseKey: 
+    vuforiaLicenseKey: AYayBAb/////AAABmVd0+uRs806EqdwMuLSHWn1L++J7OYY+QdZlNsMV0mwG33doCNzfxTipwLb8iSfrtUJvpaBVrl6AeyOHvt9LpDKZFOB47ElmA9SSz3Sw/3EEZvak/KsvWKLwSEVvrR+EZcaPCTuBoezw7gFBPgpa5LvuarzGDHCwfLHWbQ4XynWoBUtUci1Nvk8wOETKcA+fhGscavmqcQrxlkHJRE5naKc0RHmGsoR0NyeeAsDPSVWvm+tGDcnEp+VDmRd0HOUXyBYzALJcljv31me7d3I2vllM0+oGVvGFzd6YY2oMQNfKKpJUFRpBd6siwAt9LyMW9X5pHd+MQzi/iG4jKazDNuzJWP6IW+Rz8oSkoGbesBjr
     ufoLicenseKey: QVV4S2NZMy8vLy8vQUFBQUtLTGhhNEY3MGsxVXVsUWpETlVvZXNLZGtiZktCNmJtNU1nSTBPajdGWUlOSU5kY3A2YzZadStPL202K3pVZ1dIQkpJVXVYaTVXSFd1TGFTV1M1R3h5UDJnRnZQL0h2UnVWanpUNHZqQWQyOHViYVNiWjdVU2FxSk5CS1Z6YjR5UjZLUjdVenJOenp0RkUyR0tQYzJoOVl0OEFpeEIzVld5SW00OTNTeXRGNTZXODZkY2psbGtqbWpaWUdDdm5DK3V6OCszUWxsMkJRSXgzcUFnUkFzV25SY2ZXR3AyWmZYekowakJod3htSHNWZVpycHRpb1l6aDFwN1ltY3ZWcnJlOVFSZFpYSzMwWXlGdWZJU2NTTFlUTVZWSDZkYnBVT1Q4aWduNmM2dmh5Z2Y1T2VVRk11WkxUNndvdmpaV3AwZTlhMmdmakljNnQwVkgzNzh2Ylg4dHlYWTJmQWFYcUJmWmRKSEs0WHAraHg=
     delayedInitialization: 0
     cameraFocusModeSetting: 2
     cameraDeviceModeSetting: -1
     maxSimultaneousImageTargets: 1
     virtualSceneScaleFactor: 1
-    modelTargetRecoWhileExtendedTracked: 1
+    modelTargetRecoWhileExtendedTracked: 0
     shareRecordingsInITunes: 0
     logLevel: 0
     version: 11.4.4
@@ -41,10 +41,10 @@ MonoBehaviour:
     unlitShader: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
     videoBackgroundEnabled: 1
   deviceTracker:
-    autoStartTracker: 1
+    autoStartTracker: 0
     arcoreRequirement: 1
     autoImportArcore: 1
-    thirdPartyARCoreClientDetected: 0
+    thirdPartyARCoreClientDetected: 1
   playmode:
     mRecordingPath: 
     playModeType: 0
