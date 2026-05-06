@@ -1,18 +1,29 @@
 using UnityEngine;
 using System.Collections;
-using System.IO;
 using Vuforia;
 using UnityEngine.UI;
+using TMPro;
+using System.IO; 
 
-public class VuforiaSnapshot : MonoBehaviour
+public class Snapshot : MonoBehaviour
 {
     [Header("Referensi Objek")]
     public Canvas uiCanvas;
     public Camera arCamera;
     public Button snapshotButton;
-    private bool isProcessing = false;  
+    public TextMeshProUGUI displayText;
+    
+    [Header("Area Scan (Target Rect)")]
+    // Drag your RawImage (or the panel you want to act as the scanner frame) here
+    public RectTransform scanArea; 
+
+    private bool isProcessing = false;
+    private TesseractDriver _tesseractDriver;
+    private Texture2D _textureToProcess;
+
     void Start()
     {
+        _tesseractDriver = new TesseractDriver();
         VuforiaApplication.Instance.OnVuforiaStarted += InitializeVuforiaCamera;
     }
 
@@ -23,7 +34,6 @@ public class VuforiaSnapshot : MonoBehaviour
 
     public void TakeAShot()
     {
-        // Prevent multiple clicks
         if (isProcessing) return;
         
         StartCoroutine(CaptureAndProcess());
@@ -36,7 +46,15 @@ public class VuforiaSnapshot : MonoBehaviour
         if (uiCanvas != null) uiCanvas.enabled = false;
         yield return new WaitForEndOfFrame();
 
-        // --- Use SCREEN dimensions as the output canvas ---
+        // 1. Dapatkan posisi layar dari scanArea (Raw Image)
+        Rect screenRect = GetScreenRect(scanArea);
+
+        // Clamping untuk memastikan area tidak keluar dari batas layar
+        int startX = Mathf.Clamp(Mathf.RoundToInt(screenRect.x), 0, Screen.width);
+        int startY = Mathf.Clamp(Mathf.RoundToInt(screenRect.y), 0, Screen.height);
+        int cropW = Mathf.Clamp(Mathf.RoundToInt(screenRect.width), 1, Screen.width - startX);
+        int cropH = Mathf.Clamp(Mathf.RoundToInt(screenRect.height), 1, Screen.height - startY);
+
         int outW = Screen.width;
         int outH = Screen.height;
 
@@ -50,25 +68,25 @@ public class VuforiaSnapshot : MonoBehaviour
             yield break;
         }
 
-        // Load raw Vuforia pixels into a texture at sensor resolution
         Texture2D rawBgTex = new Texture2D(cameraImage.Width, cameraImage.Height, TextureFormat.RGB24, false);
         cameraImage.CopyToTexture(rawBgTex);
         rawBgTex.Apply();
 
-        // Blit (scale) to screen resolution using a RenderTexture
         RenderTexture bgRT = RenderTexture.GetTemporary(outW, outH, 0, RenderTextureFormat.ARGB32);
         Graphics.Blit(rawBgTex, bgRT);
 
         RenderTexture.active = bgRT;
-        Texture2D bgTex = new Texture2D(outW, outH, TextureFormat.RGB24, false);
-        bgTex.ReadPixels(new Rect(0, 0, outW, outH), 0, 0);
+        // BIKIN TEXTURE SESUAI UKURAN CROP SAJA
+        Texture2D bgTex = new Texture2D(cropW, cropH, TextureFormat.RGB24, false);
+        // READ PIXELS HANYA DI AREA CROP
+        bgTex.ReadPixels(new Rect(startX, startY, cropW, cropH), 0, 0); 
         bgTex.Apply();
         RenderTexture.active = null;
 
         RenderTexture.ReleaseTemporary(bgRT);
         Destroy(rawBgTex);
 
-        // TAHAP 2: Render AR Objects at Screen Resolution
+        // TAHAP 2: Render  at Screen Resolution
         RenderTexture fgRT = new RenderTexture(outW, outH, 24, RenderTextureFormat.ARGB32);
 
         CameraClearFlags origFlags = arCamera.clearFlags;
@@ -85,8 +103,10 @@ public class VuforiaSnapshot : MonoBehaviour
         arCamera.backgroundColor = origColor;
 
         RenderTexture.active = fgRT;
-        Texture2D fgTex = new Texture2D(outW, outH, TextureFormat.ARGB32, false);
-        fgTex.ReadPixels(new Rect(0, 0, outW, outH), 0, 0);
+        // BIKIN TEXTURE SESUAI UKURAN CROP SAJA
+        Texture2D fgTex = new Texture2D(cropW, cropH, TextureFormat.ARGB32, false);
+        // READ PIXELS HANYA DI AREA CROP
+        fgTex.ReadPixels(new Rect(startX, startY, cropW, cropH), 0, 0);
         fgTex.Apply();
         RenderTexture.active = null;
 
@@ -100,7 +120,8 @@ public class VuforiaSnapshot : MonoBehaviour
             bgPixels[i] = fg * fg.a + bgPixels[i] * (1f - fg.a);
         }
 
-        Texture2D finalTex = new Texture2D(outW, outH);
+        // BIKIN FINAL TEXTURE SESUAI UKURAN CROP
+        Texture2D finalTex = new Texture2D(cropW, cropH);
         finalTex.SetPixels(bgPixels);
         finalTex.Apply();
 
@@ -108,47 +129,62 @@ public class VuforiaSnapshot : MonoBehaviour
         Destroy(fgTex);
         Destroy(fgRT);
 
-        // TAHAP 4: Simpan
-        byte[] bytes = finalTex.EncodeToPNG();
-        Destroy(finalTex);
+        _textureToProcess = finalTex;
 
-        string timeStamp = System.DateTime.Now.ToString("dd-MM-yyyy-HH-mm-ss");
-        string fileName = "VuforiaAPI_Scan_" + timeStamp + ".png";
-
-        string filePath;
-#if UNITY_EDITOR
-        filePath = Path.Combine(Application.dataPath, fileName);
-#else
-        filePath = Path.Combine(Application.persistentDataPath, fileName);
-#endif
-
-        File.WriteAllBytes(filePath, bytes);
-
-        if (uiCanvas != null) uiCanvas.enabled = true;
-        Debug.Log("Disimpan di:\n" + filePath);
-
-        // --- Placeholder for OCR ---
-        Debug.Log("Snapshot taken. Starting OCR simulation...");
-        // We simulate OCR taking 2 seconds
-        yield return new WaitForSeconds(2.0f); 
-
-        // --- PHASE 3: Cleanup ---
-        if (uiCanvas != null) uiCanvas.enabled = true;
+        Debug.Log($"Snapshot taken at {cropW}x{cropH}. Starting OCR simulation...");
+        if (displayText != null) displayText.text = "Initializing OCR...";
         
-        isProcessing = false;
-        SetUILoading(false);
-        
-        Debug.Log("OCR Finished. Button is now clickable again.");
+        _tesseractDriver.Setup(OnTesseractSetupComplete);
+
+        while (isProcessing)
+        {
+            yield return null;
+        }
+    }
+
+    private Rect GetScreenRect(RectTransform rectTransform)
+    {
+        Vector3[] corners = new Vector3[4];
+        rectTransform.GetWorldCorners(corners);
+
+        // Cek apakah Canvas menggunakan Screen Space - Camera atau Overlay
+        Camera cam = uiCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : uiCanvas.worldCamera;
+
+        // Ubah koordinat ujung kiri bawah dan kanan atas ke koordinat layar
+        Vector2 bottomLeft = RectTransformUtility.WorldToScreenPoint(cam, corners[0]);
+        Vector2 topRight = RectTransformUtility.WorldToScreenPoint(cam, corners[2]);
+
+        float width = topRight.x - bottomLeft.x;
+        float height = topRight.y - bottomLeft.y;
+
+        return new Rect(bottomLeft.x, bottomLeft.y, width, height);
     }
 
     private void SetUILoading(bool isLoading)
     {
         if (snapshotButton != null)
         {
-            // Disable the button so it can't be clicked
             snapshotButton.interactable = !isLoading;
         }
     }
 
-    // TODO: instead of saving the snapshot byte, we directly process it to OCR
+    private void OnTesseractSetupComplete()
+    {
+        string result = _tesseractDriver.Recognize(_textureToProcess);
+        
+        if (displayText != null)
+        {
+            displayText.text = "OCR Result:\n" + result;
+        }
+
+        Debug.Log("OCR Result: " + result);
+
+        if (_textureToProcess != null) Destroy(_textureToProcess);
+        
+        if (uiCanvas != null) uiCanvas.enabled = true;
+        isProcessing = false;
+        SetUILoading(false);
+        
+        Debug.Log("OCR Finished. Ready for next scan.");
+    }
 }
