@@ -38,13 +38,13 @@ public class Analyze : MonoBehaviour
     // NOTE: Make sure this function TRIGGERS the vertical bar to appear in the scene
     public void ShowVerticalBar()
     {
-        // 1. Get the data first
+        // 1. Get the data first (Save analyzed data output on this class Variable so other function can access it)
         AnalyzeData(); // Change the function type as needed since AnalyzeData should return something so that you can process on this function
 
         // 2. Add your UI trigger and animation logic here
     }
 
-    // TODO (Rantizi): Trigger the AR 3D object visualization. 
+    // TODO (Rantizi): Trigger the AR 3D object visualization. (Only Maskot with its animation for sehat, normal, dan gak sehat)
     // Make sure to discuss with Gideon to ensure you receive the correct data values needed from the analysis.
     public void TriggerARAnimation()
     {
