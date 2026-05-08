@@ -23,6 +23,7 @@ public class Snapshot : MonoBehaviour
 
     void Start()
     {
+        VuforiaApplication.Instance.Initialize();
         _tesseractDriver = new TesseractDriver();
         VuforiaApplication.Instance.OnVuforiaStarted += InitializeVuforiaCamera;
     }
