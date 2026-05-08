@@ -39,8 +39,15 @@ public class Analyze : MonoBehaviour
     public void ShowVerticalBar()
     {
         // 1. Get the data first
-        AnalyzeData(); // Change the function type as needed since AnalyzeData should return something so that you can process on the vertical bar
+        AnalyzeData(); // Change the function type as needed since AnalyzeData should return something so that you can process on this function
 
         // 2. Add your UI trigger and animation logic here
+    }
+
+    // TODO (Rantizi): Trigger the AR 3D object visualization. 
+    // Make sure to discuss with Gideon to ensure you receive the correct data values needed from the analysis.
+    public void TriggerARAnimation()
+    {
+        
     }
 }
