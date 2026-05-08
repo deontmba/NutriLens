@@ -3,26 +3,25 @@ using System.Collections;
 using Vuforia;
 using UnityEngine.UI;
 using TMPro;
-using System.IO; 
+using System.Collections.Generic;
 
-public class Snapshot : MonoBehaviour
+public class Scan : MonoBehaviour
 {
-    [Header("Referensi Objek")]
     public Canvas uiCanvas;
     public Camera arCamera;
     public Button snapshotButton;
     public TextMeshProUGUI displayText;
-    
-    [Header("Area Scan (Target Rect)")]
-    // Drag your RawImage (or the panel you want to act as the scanner frame) here
-    public RectTransform scanArea; 
+    public RectTransform scanArea;
+    public Analyze analyzePageManager;
 
     private bool isProcessing = false;
     private TesseractDriver _tesseractDriver;
     private Texture2D _textureToProcess;
+    private string _lastScannedText = "";
 
     void Start()
     {
+        VuforiaApplication.Instance.Initialize();
         _tesseractDriver = new TesseractDriver();
         VuforiaApplication.Instance.OnVuforiaStarted += InitializeVuforiaCamera;
     }
@@ -140,6 +139,18 @@ public class Snapshot : MonoBehaviour
         {
             yield return null;
         }
+
+        if (analyzePageManager != null)
+        {
+            List<float> parsedOCR = ParsingOcrOutput();
+            // Analyze and Show Vertical Bar
+            analyzePageManager.parsedOCR = parsedOCR;
+            analyzePageManager.ShowVerticalBar();
+        }
+        else
+        {
+            Debug.LogError("AnalyzePageManager is not assigned in the Inspector!");
+        }
     }
 
     private Rect GetScreenRect(RectTransform rectTransform)
@@ -171,10 +182,12 @@ public class Snapshot : MonoBehaviour
     private void OnTesseractSetupComplete()
     {
         string result = _tesseractDriver.Recognize(_textureToProcess);
+
         
         if (displayText != null)
         {
             displayText.text = "OCR Result:\n" + result;
+           _lastScannedText = result;
         }
 
         Debug.Log("OCR Result: " + result);
@@ -186,5 +199,20 @@ public class Snapshot : MonoBehaviour
         SetUILoading(false);
         
         Debug.Log("OCR Finished. Ready for next scan.");
+    }
+    
+    private List<float> ParsingOcrOutput()
+    {
+        List<float> numbers = new();
+        /*
+         * TODO (Wilson): Parsing OCR Output
+         * List[0] -> Gula
+         * List[1] -> Garam
+         * List[2] -> Lemak
+         * Fallback -> all 0.f
+        */
+        // _lastScannedText
+
+        return numbers;
     }
 }
