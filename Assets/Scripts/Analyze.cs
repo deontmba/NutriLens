@@ -33,7 +33,7 @@ public class Analyze : MonoBehaviour
     private NutritionStatus AnalyzeData()
     {
         // This is only mock data, since we haven't implemented the OCR parsing (modify the value as you want for testing)
-        parsedOCR = new List<float> {8f, 250f, 3f};
+        parsedOCR = new List<float> {8000f, 250f, 3f};
 
         int redCount    = 0;
         int yellowCount = 0;
@@ -60,9 +60,9 @@ public class Analyze : MonoBehaviour
         else if (parsedOCR[2] > 2f) yellowCount++;
 
         // Status dominan
-        if (redCount >= 2)                        
+        if (redCount >= 1)                        
             return NutritionStatus.TidakSehat;
-        else if (redCount == 1 || yellowCount >= 2) 
+        else if (yellowCount >= 2) 
             return NutritionStatus.Sedang;
         else                                       
         return NutritionStatus.Sehat;
@@ -71,16 +71,13 @@ public class Analyze : MonoBehaviour
         // (https://docs.google.com/document/d/1XChqsG0PHlAG1cEluaOARZ-S-31r37AsXN7Ufp355MI/edit?usp=sharing)
     }
 
-    // TODO (Gideon): Show the vertical bar on the ScanPage Scene (check mockup for detail)
-    // Make sure there is animation on the vertical bar pointer (either moving up or down)
-    // NOTE: Make sure this function TRIGGERS the vertical bar to appear in the scene
     public void ShowVerticalBar()
     {
         // 1. Get the data first (Save analyzed data output on this class Variable so other function can access it)
         currentStatus = AnalyzeData(); 
 
         // 2. Add your UI trigger and animation logic here
-         if (verticalBarObject != null)
+        if (verticalBarObject != null)
             verticalBarObject.SetActive(true);
 
         // Tentukan target posisi pointer berdasarkan status gizi

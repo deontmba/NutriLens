@@ -245,7 +245,7 @@ MonoBehaviour:
   snapshotButton: {fileID: 1843281740}
   displayText: {fileID: 1119712774}
   scanArea: {fileID: 575791184}
-  analyzePageManager: {fileID: 1229029041}
+  analyzePageManager: {fileID: 852359522}
 --- !u!114 &393794387
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -822,51 +822,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1119712772}
   m_CullTransparentMesh: 1
---- !u!1 &1229029040
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1229029042}
-  - component: {fileID: 1229029041}
-  m_Layer: 0
-  m_Name: AnalyzePageManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1229029041
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1229029040}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 74414811a008ab94ca04429b3652a6be, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Analyze
-  parsedOCR: []
---- !u!4 &1229029042
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1229029040}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 909.79443, y: 1556.1097, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1408166051
 GameObject:
   m_ObjectHideFlags: 0
@@ -1384,4 +1339,4 @@ SceneRoots:
   - {fileID: 490241751}
   - {fileID: 2040807533}
   - {fileID: 393794385}
-  - {fileID: 1229029042}
+  - {fileID: 852359523}
