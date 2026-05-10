@@ -42,7 +42,6 @@ public class Scan : MonoBehaviour
     {
         isProcessing = true;
         SetUILoading(true);
-        if (uiCanvas != null) uiCanvas.enabled = false;
         yield return new WaitForEndOfFrame();
 
         // 1. Dapatkan posisi layar dari scanArea (Raw Image)
@@ -63,7 +62,6 @@ public class Scan : MonoBehaviour
         if (cameraImage == null)
         {
             Debug.LogError("GAGAL: Vuforia camera image null.");
-            if (uiCanvas != null) uiCanvas.enabled = true;
             yield break;
         }
 
@@ -146,6 +144,8 @@ public class Scan : MonoBehaviour
             yield return null;
         }
 
+        yield return new WaitForSeconds(0.5f); 
+
         if (analyzePageManager != null)
         {
             List<float> parsedOCR = ParsingOcrOutput();
@@ -200,7 +200,6 @@ public class Scan : MonoBehaviour
 
         if (_textureToProcess != null) Destroy(_textureToProcess);
         
-        if (uiCanvas != null) uiCanvas.enabled = true;
         isProcessing = false;
         SetUILoading(false);
         
