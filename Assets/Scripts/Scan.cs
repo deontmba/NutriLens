@@ -119,7 +119,6 @@ public class Scan : MonoBehaviour
             bgPixels[i] = fg * fg.a + bgPixels[i] * (1f - fg.a);
         }
 
-        // BIKIN FINAL TEXTURE SESUAI UKURAN CROP
         Texture2D finalTex = new Texture2D(cropW, cropH);
         finalTex.SetPixels(bgPixels);
         finalTex.Apply();
@@ -128,7 +127,14 @@ public class Scan : MonoBehaviour
         Destroy(fgTex);
         Destroy(fgRT);
 
-        _textureToProcess = finalTex;
+        _textureToProcess = ImagePreprocessor.Preprocess(finalTex);
+
+        // can be deleted later
+        SaveTextureForDebug(finalTex, "original.png");       // before preprocess
+        SaveTextureForDebug(_textureToProcess, "preprocessed.png"); // after preprocess
+        
+        Destroy(finalTex);
+
 
         Debug.Log($"Snapshot taken at {cropW}x{cropH}. Starting OCR simulation...");
         if (displayText != null) displayText.text = "Initializing OCR...";
@@ -201,6 +207,21 @@ public class Scan : MonoBehaviour
         Debug.Log("OCR Finished. Ready for next scan.");
     }
     
+    private void SaveTextureForDebug(Texture2D texture, string fileName)
+    {
+        byte[] pngBytes = texture.EncodeToPNG();
+
+#if UNITY_EDITOR
+        string path = System.IO.Path.Combine(Application.dataPath, "DebugCaptures", fileName);
+        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+#else
+        string path = System.IO.Path.Combine(Application.persistentDataPath, fileName);
+#endif
+
+        System.IO.File.WriteAllBytes(path, pngBytes);
+        Debug.Log($"[DEBUG] Texture saved to: {path}");
+    }
+
     private List<float> ParsingOcrOutput()
     {
         List<float> numbers = new();
