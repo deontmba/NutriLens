@@ -51,7 +51,7 @@ public class TesseractDriver
         string datapath = Path.Combine(Application.streamingAssetsPath, "tessdata");
 #endif
 
-        if (_tesseract.Init("eng", datapath))
+        if (_tesseract.Init("eng+ind", datapath))
         {
             Debug.Log("Init Successful");
             onSetupComplete?.Invoke();
