@@ -42,7 +42,6 @@ public class Scan : MonoBehaviour
     {
         isProcessing = true;
         SetUILoading(true);
-        if (uiCanvas != null) uiCanvas.enabled = false;
         yield return new WaitForEndOfFrame();
 
         // 1. Dapatkan posisi layar dari scanArea (Raw Image)
@@ -63,7 +62,6 @@ public class Scan : MonoBehaviour
         if (cameraImage == null)
         {
             Debug.LogError("GAGAL: Vuforia camera image null.");
-            if (uiCanvas != null) uiCanvas.enabled = true;
             yield break;
         }
 
@@ -119,7 +117,6 @@ public class Scan : MonoBehaviour
             bgPixels[i] = fg * fg.a + bgPixels[i] * (1f - fg.a);
         }
 
-        // BIKIN FINAL TEXTURE SESUAI UKURAN CROP
         Texture2D finalTex = new Texture2D(cropW, cropH);
         finalTex.SetPixels(bgPixels);
         finalTex.Apply();
@@ -128,7 +125,14 @@ public class Scan : MonoBehaviour
         Destroy(fgTex);
         Destroy(fgRT);
 
-        _textureToProcess = finalTex;
+        _textureToProcess = ImagePreprocessor.Preprocess(finalTex);
+
+        // can be deleted later
+        SaveTextureForDebug(finalTex, "original.png");       // before preprocess
+        SaveTextureForDebug(_textureToProcess, "preprocessed.png"); // after preprocess
+        
+        Destroy(finalTex);
+
 
         Debug.Log($"Snapshot taken at {cropW}x{cropH}. Starting OCR simulation...");
         if (displayText != null) displayText.text = "Initializing OCR...";
@@ -139,6 +143,8 @@ public class Scan : MonoBehaviour
         {
             yield return null;
         }
+
+        yield return new WaitForSeconds(0.5f); 
 
         if (analyzePageManager != null)
         {
@@ -194,13 +200,27 @@ public class Scan : MonoBehaviour
 
         if (_textureToProcess != null) Destroy(_textureToProcess);
         
-        if (uiCanvas != null) uiCanvas.enabled = true;
         isProcessing = false;
         SetUILoading(false);
         
         Debug.Log("OCR Finished. Ready for next scan.");
     }
     
+    private void SaveTextureForDebug(Texture2D texture, string fileName)
+    {
+        byte[] pngBytes = texture.EncodeToPNG();
+
+#if UNITY_EDITOR
+        string path = System.IO.Path.Combine(Application.dataPath, "DebugCaptures", fileName);
+        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+#else
+        string path = System.IO.Path.Combine(Application.persistentDataPath, fileName);
+#endif
+
+        System.IO.File.WriteAllBytes(path, pngBytes);
+        Debug.Log($"[DEBUG] Texture saved to: {path}");
+    }
+
     private List<float> ParsingOcrOutput()
     {
         List<float> numbers = new();
