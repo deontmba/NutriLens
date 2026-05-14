@@ -116,11 +116,4 @@ public class Analyze : MonoBehaviour
 
         pointerRect.anchoredPosition = endPos;
     }
-
-    // TODO (Rantizi): Trigger the AR 3D object visualization. (Only Maskot with its animation for sehat, normal, dan gak sehat)
-    // Make sure to discuss with Gideon to ensure you receive the correct data values needed from the analysis.
-    public void TriggerARAnimation()
-    {
-        
-    }
 }
