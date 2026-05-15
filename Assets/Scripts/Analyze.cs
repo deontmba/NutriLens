@@ -5,13 +5,10 @@ using System.Collections.Generic;
 public class Analyze : MonoBehaviour
 {
     public List<float> parsedOCR;
-    
-    public enum NutritionStatus { Sehat, Sedang, TidakSehat }
-
-    public NutritionStatus currentStatus { get; private set; }
-
+    public NutritionResult currentStatus { get; private set; }
     public GameObject verticalBarObject;
     public RectTransform pointerRect;
+    public ARVisualizationManager aRVisualizationManager;
 
     private float pointerPosSehat = -150f;
     private float pointerPosSedang = 0f;
@@ -30,7 +27,7 @@ public class Analyze : MonoBehaviour
     }
 
     // TODO (Gideon): Process the parsedOCR data (change the function type as needed)
-    private NutritionStatus AnalyzeData()
+    private NutritionResult AnalyzeData()
     {
         // This is only mock data, since we haven't implemented the OCR parsing (modify the value as you want for testing)
         parsedOCR = new List<float> {8000f, 250f, 3f};
@@ -61,11 +58,11 @@ public class Analyze : MonoBehaviour
 
         // Status dominan
         if (redCount >= 1)                        
-            return NutritionStatus.TidakSehat;
+            return NutritionResult.Healthy;
         else if (yellowCount >= 2) 
-            return NutritionStatus.Sedang;
+            return NutritionResult.Healthy;
         else                                       
-        return NutritionStatus.Sehat;
+        return NutritionResult.Healthy;
 
         // The Range for gula, garam, and lemak was written in our Report's Core Mechanic Section 
         // (https://docs.google.com/document/d/1XChqsG0PHlAG1cEluaOARZ-S-31r37AsXN7Ufp355MI/edit?usp=sharing)
@@ -75,6 +72,7 @@ public class Analyze : MonoBehaviour
     {
         // 1. Get the data first (Save analyzed data output on this class Variable so other function can access it)
         currentStatus = AnalyzeData(); 
+        aRVisualizationManager.currentStatus = currentStatus;
 
         // 2. Add your UI trigger and animation logic here
         if (verticalBarObject != null)
@@ -82,9 +80,9 @@ public class Analyze : MonoBehaviour
 
         // Tentukan target posisi pointer berdasarkan status gizi
         float targetY = pointerPosSedang;
-        if (currentStatus == NutritionStatus.Sehat)
+        if (currentStatus == NutritionResult.Healthy)
             targetY = pointerPosSehat;
-        else if (currentStatus == NutritionStatus.TidakSehat)
+        else if (currentStatus == NutritionResult.Healthy)
             targetY = pointerPosTidakSehat;
 
         // Animasi pointer bergerak ke posisi target
