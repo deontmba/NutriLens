@@ -28,6 +28,13 @@ public class ScanARResultController : MonoBehaviour
     public TMP_Text resultTitleText;
     public TMP_Text resultDescriptionText;
 
+    [Header("Camera Placement")]
+    public Camera arCamera;
+    public float spawnDistance = 1.2f;
+    public float spawnVerticalOffset = -0.25f;
+    public float resultObjectHorizontalOffset = -0.35f;
+    public float resultObjectVerticalOffset = 0.25f;
+
     private void Start()
     {
         ResetScan();
@@ -38,6 +45,8 @@ public class ScanARResultController : MonoBehaviour
         Debug.Log("AnalyzeNutrition dipanggil. Current Result = " + currentResult);
 
         HideAllObjects();
+
+        PlaceObjectsInFrontOfCamera();
 
         if (mascot != null)
         {
@@ -81,6 +90,59 @@ public class ScanARResultController : MonoBehaviour
         {
             resultPanel.SetActive(false);
         }
+
+        if (resultTitleText != null)
+        {
+            resultTitleText.text = "";
+        }
+
+        if (resultDescriptionText != null)
+        {
+            resultDescriptionText.text = "";
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (arCamera == null)
+        {
+            arCamera = Camera.main;
+        }
+
+        if (arCamera == null) return;
+
+        Transform cam = arCamera.transform;
+
+        if (mascot != null && mascot.activeSelf)
+        {
+            FaceCameraSmooth(mascot.transform, cam);
+        }
+
+        GameObject resultObject = GetCurrentResultObject();
+        if (resultObject != null && resultObject.activeSelf)
+        {
+            FaceCameraSmooth(resultObject.transform, cam);
+        }
+    }
+
+    // Ganti fungsi FaceCamera yang lama dengan ini
+    private void FaceCameraSmooth(Transform target, Transform cam)
+    {
+        if (target == null || cam == null) return;
+
+        Vector3 direction = cam.position - target.position;
+
+        if (direction != Vector3.zero)
+        {
+            // Gunakan cam.up agar objek mengikuti orientasi kamera sepenuhnya
+            // termasuk saat kamera miring ke atas atau bawah
+            Quaternion targetRotation = Quaternion.LookRotation(direction, cam.up);
+            target.rotation = Quaternion.Slerp(
+                target.rotation, 
+                targetRotation, 
+                Time.deltaTime * 8f
+            );
+        }
     }
 
     private void HideAllObjects()
@@ -93,13 +155,77 @@ public class ScanARResultController : MonoBehaviour
         if (sugarCube != null) sugarCube.SetActive(false);
     }
 
+    private void PlaceObjectsInFrontOfCamera()
+    {
+        if (arCamera == null)
+        {
+            arCamera = Camera.main;
+        }
+
+        if (arCamera == null)
+        {
+            Debug.LogWarning("AR Camera belum diisi di ScanARResultController.");
+            return;
+        }
+
+        Transform cam = arCamera.transform;
+
+        Vector3 mascotPosition =
+            cam.position +
+            cam.forward * spawnDistance +
+            cam.up * spawnVerticalOffset;
+
+        GameObject resultObject = GetCurrentResultObject();
+
+        if (mascot != null)
+        {
+            mascot.transform.position = mascotPosition;
+            FaceCameraSmooth(mascot.transform, cam);
+        }
+
+        if (resultObject != null)
+        {
+            Vector3 resultObjectPosition =
+                mascotPosition +
+                cam.right * resultObjectHorizontalOffset +
+                cam.up * resultObjectVerticalOffset;
+
+            resultObject.transform.position = resultObjectPosition;
+            FaceCameraSmooth(resultObject.transform, cam);
+        }
+    }
+
+    private GameObject GetCurrentResultObject()
+    {
+        switch (currentResult)
+        {
+            case NutritionResult.Healthy:
+                return saladBowl;
+
+            case NutritionResult.HighSugar:
+                return sugarCube;
+
+            case NutritionResult.HighSalt:
+                return salt;
+
+            case NutritionResult.HighFat:
+                return oilDrop;
+
+            case NutritionResult.HighCalories:
+                return donut;
+
+            default:
+                return null;
+        }
+    }
+
     private void ShowHealthyResult()
     {
         if (saladBowl != null) saladBowl.SetActive(true);
 
         SetResultText(
-            "Sehat",
-            "Pilihan ini terlihat lebih baik untuk tubuh."
+            "Pilihan sehat",
+            "Produk ini memiliki kandungan nutrisi yang lebih baik untuk dikonsumsi."
         );
     }
 
@@ -108,7 +234,7 @@ public class ScanARResultController : MonoBehaviour
         if (sugarCube != null) sugarCube.SetActive(true);
 
         SetResultText(
-            "Tinggi gula ⚠️",
+            "Tinggi gula",
             "Coba pilih produk dengan kandungan gula yang lebih rendah."
         );
     }
@@ -118,8 +244,8 @@ public class ScanARResultController : MonoBehaviour
         if (salt != null) salt.SetActive(true);
 
         SetResultText(
-            "Tinggi garam ⚠️",
-            "Produk ini memiliki kandungan sodium/garam yang perlu dibatasi."
+            "Tinggi garam",
+            "Produk ini memiliki kandungan sodium atau garam yang perlu dibatasi."
         );
     }
 
@@ -128,7 +254,7 @@ public class ScanARResultController : MonoBehaviour
         if (oilDrop != null) oilDrop.SetActive(true);
 
         SetResultText(
-            "Tinggi lemak ⚠️",
+            "Tinggi lemak",
             "Perhatikan kandungan lemak, terutama lemak jenuh."
         );
     }
@@ -138,7 +264,7 @@ public class ScanARResultController : MonoBehaviour
         if (donut != null) donut.SetActive(true);
 
         SetResultText(
-            "Tinggi kalori ⚠️",
+            "Tinggi kalori",
             "Konsumsi secukupnya agar tidak berlebihan."
         );
     }
