@@ -10,6 +10,7 @@ public class Scan : MonoBehaviour
     public Canvas uiCanvas;
     public Camera arCamera;
     public Button snapshotButton;
+    public Button analyzeButton;
     public TextMeshProUGUI displayText;
     public RectTransform scanArea;
     public Analyze analyzePageManager;
@@ -24,6 +25,9 @@ public class Scan : MonoBehaviour
         VuforiaApplication.Instance.Initialize();
         _tesseractDriver = new TesseractDriver();
         VuforiaApplication.Instance.OnVuforiaStarted += InitializeVuforiaCamera;
+
+        snapshotButton.gameObject.SetActive(true);
+        analyzeButton.gameObject.SetActive(false);
     }
 
     void InitializeVuforiaCamera()
@@ -152,6 +156,9 @@ public class Scan : MonoBehaviour
             // Analyze and Show Vertical Bar
             analyzePageManager.parsedOCR = parsedOCR;
             analyzePageManager.ShowVerticalBar();
+
+            snapshotButton.gameObject.SetActive(false);
+            analyzeButton.gameObject.SetActive(true);
         }
         else
         {
