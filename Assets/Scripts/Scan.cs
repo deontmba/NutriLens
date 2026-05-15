@@ -48,121 +48,127 @@ public class Scan : MonoBehaviour
         SetUILoading(true);
         yield return new WaitForEndOfFrame();
 
-        // 1. Dapatkan posisi layar dari scanArea (Raw Image)
-        Rect screenRect = GetScreenRect(scanArea);
+        // Coba ambil gambar dari kamera Vuforia
+        Vuforia.Image cameraImage = null;
+        try
+        {
+            cameraImage = VuforiaBehaviour.Instance.CameraDevice.GetCameraImage(PixelFormat.RGB888);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("[NutriLens] Tidak bisa ambil gambar kamera: " + e.Message);
+        }
 
-        // Clamping untuk memastikan area tidak keluar dari batas layar
-        int startX = Mathf.Clamp(Mathf.RoundToInt(screenRect.x), 0, Screen.width);
-        int startY = Mathf.Clamp(Mathf.RoundToInt(screenRect.y), 0, Screen.height);
-        int cropW = Mathf.Clamp(Mathf.RoundToInt(screenRect.width), 1, Screen.width - startX);
-        int cropH = Mathf.Clamp(Mathf.RoundToInt(screenRect.height), 1, Screen.height - startY);
-
-        int outW = Screen.width;
-        int outH = Screen.height;
-
-        // TAHAP 1: Ambil Gambar Vuforia & Scale ke Screen Size
-        Vuforia.Image cameraImage = VuforiaBehaviour.Instance.CameraDevice.GetCameraImage(PixelFormat.RGB888);
-
+        // Kalau kamera null (laptop/editor), langsung skip ke analyze
         if (cameraImage == null)
         {
-            Debug.LogError("GAGAL: Vuforia camera image null.");
-            yield break;
+            Debug.LogWarning("[NutriLens] Camera image null - skip image processing, lanjut ke analyze.");
+            isProcessing = false;
+            SetUILoading(false);
+            if (displayText != null) displayText.text = "OCR Result: (skipped)";
         }
-
-        Texture2D rawBgTex = new Texture2D(cameraImage.Width, cameraImage.Height, TextureFormat.RGB24, false);
-        cameraImage.CopyToTexture(rawBgTex);
-        rawBgTex.Apply();
-
-        RenderTexture bgRT = RenderTexture.GetTemporary(outW, outH, 0, RenderTextureFormat.ARGB32);
-        Graphics.Blit(rawBgTex, bgRT);
-
-        RenderTexture.active = bgRT;
-        // BIKIN TEXTURE SESUAI UKURAN CROP SAJA
-        Texture2D bgTex = new Texture2D(cropW, cropH, TextureFormat.RGB24, false);
-        // READ PIXELS HANYA DI AREA CROP
-        bgTex.ReadPixels(new Rect(startX, startY, cropW, cropH), 0, 0); 
-        bgTex.Apply();
-        RenderTexture.active = null;
-
-        RenderTexture.ReleaseTemporary(bgRT);
-        Destroy(rawBgTex);
-
-        // TAHAP 2: Render  at Screen Resolution
-        RenderTexture fgRT = new RenderTexture(outW, outH, 24, RenderTextureFormat.ARGB32);
-
-        CameraClearFlags origFlags = arCamera.clearFlags;
-        Color origColor = arCamera.backgroundColor;
-        RenderTexture origTarget = arCamera.targetTexture;
-
-        arCamera.clearFlags = CameraClearFlags.SolidColor;
-        arCamera.backgroundColor = new Color(0, 0, 0, 0);
-        arCamera.targetTexture = fgRT;
-        arCamera.Render();
-
-        arCamera.targetTexture = origTarget;
-        arCamera.clearFlags = origFlags;
-        arCamera.backgroundColor = origColor;
-
-        RenderTexture.active = fgRT;
-        // BIKIN TEXTURE SESUAI UKURAN CROP SAJA
-        Texture2D fgTex = new Texture2D(cropW, cropH, TextureFormat.ARGB32, false);
-        // READ PIXELS HANYA DI AREA CROP
-        fgTex.ReadPixels(new Rect(startX, startY, cropW, cropH), 0, 0);
-        fgTex.Apply();
-        RenderTexture.active = null;
-
-        // TAHAP 3: Compositing
-        Color[] bgPixels = bgTex.GetPixels();
-        Color[] fgPixels = fgTex.GetPixels();
-
-        for (int i = 0; i < bgPixels.Length; i++)
+        else
         {
-            Color fg = fgPixels[i];
-            bgPixels[i] = fg * fg.a + bgPixels[i] * (1f - fg.a);
+            // ── Proses gambar kamera ──────────────────────────────────
+            Rect screenRect = GetScreenRect(scanArea);
+            int startX = Mathf.Clamp(Mathf.RoundToInt(screenRect.x), 0, Screen.width);
+            int startY = Mathf.Clamp(Mathf.RoundToInt(screenRect.y), 0, Screen.height);
+            int cropW  = Mathf.Clamp(Mathf.RoundToInt(screenRect.width),  1, Screen.width  - startX);
+            int cropH  = Mathf.Clamp(Mathf.RoundToInt(screenRect.height), 1, Screen.height - startY);
+            int outW   = Screen.width;
+            int outH   = Screen.height;
+
+            Texture2D rawBgTex = new Texture2D(cameraImage.Width, cameraImage.Height, TextureFormat.RGB24, false);
+            cameraImage.CopyToTexture(rawBgTex);
+            rawBgTex.Apply();
+
+            RenderTexture bgRT = RenderTexture.GetTemporary(outW, outH, 0, RenderTextureFormat.ARGB32);
+            Graphics.Blit(rawBgTex, bgRT);
+            RenderTexture.active = bgRT;
+            Texture2D bgTex = new Texture2D(cropW, cropH, TextureFormat.RGB24, false);
+            bgTex.ReadPixels(new Rect(startX, startY, cropW, cropH), 0, 0);
+            bgTex.Apply();
+            RenderTexture.active = null;
+            RenderTexture.ReleaseTemporary(bgRT);
+            Destroy(rawBgTex);
+
+            RenderTexture fgRT = new RenderTexture(outW, outH, 24, RenderTextureFormat.ARGB32);
+            CameraClearFlags origFlags = arCamera.clearFlags;
+            Color origColor = arCamera.backgroundColor;
+            RenderTexture origTarget = arCamera.targetTexture;
+            arCamera.clearFlags = CameraClearFlags.SolidColor;
+            arCamera.backgroundColor = new Color(0, 0, 0, 0);
+            arCamera.targetTexture = fgRT;
+            arCamera.Render();
+            arCamera.targetTexture = origTarget;
+            arCamera.clearFlags = origFlags;
+            arCamera.backgroundColor = origColor;
+
+            RenderTexture.active = fgRT;
+            Texture2D fgTex = new Texture2D(cropW, cropH, TextureFormat.ARGB32, false);
+            fgTex.ReadPixels(new Rect(startX, startY, cropW, cropH), 0, 0);
+            fgTex.Apply();
+            RenderTexture.active = null;
+
+            Color[] bgPixels = bgTex.GetPixels();
+            Color[] fgPixels = fgTex.GetPixels();
+            for (int i = 0; i < bgPixels.Length; i++)
+            {
+                Color fg = fgPixels[i];
+                bgPixels[i] = fg * fg.a + bgPixels[i] * (1f - fg.a);
+            }
+
+            Texture2D finalTex = new Texture2D(cropW, cropH);
+            finalTex.SetPixels(bgPixels);
+            finalTex.Apply();
+            Destroy(bgTex);
+            Destroy(fgTex);
+            Destroy(fgRT);
+
+            _textureToProcess = ImagePreprocessor.Preprocess(finalTex);
+            SaveTextureForDebug(finalTex, "original.png");
+            SaveTextureForDebug(_textureToProcess, "preprocessed.png");
+            Destroy(finalTex);
+
+            if (displayText != null) displayText.text = "Initializing OCR...";
+            _tesseractDriver.Setup(OnTesseractSetupComplete);
+
+            // Timeout 10 detik
+            float timeout = 10f;
+            float elapsed = 0f;
+            while (isProcessing && elapsed < timeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (isProcessing)
+            {
+                Debug.LogWarning("[NutriLens] OCR timeout! Lanjut dengan data fallback.");
+                isProcessing = false;
+                SetUILoading(false);
+                if (displayText != null) displayText.text = "OCR Result: (timeout)";
+            }
         }
 
-        Texture2D finalTex = new Texture2D(cropW, cropH);
-        finalTex.SetPixels(bgPixels);
-        finalTex.Apply();
-
-        Destroy(bgTex);
-        Destroy(fgTex);
-        Destroy(fgRT);
-
-        _textureToProcess = ImagePreprocessor.Preprocess(finalTex);
-
-        // can be deleted later
-        SaveTextureForDebug(finalTex, "original.png");       // before preprocess
-        SaveTextureForDebug(_textureToProcess, "preprocessed.png"); // after preprocess
-        
-        Destroy(finalTex);
-
-
-        Debug.Log($"Snapshot taken at {cropW}x{cropH}. Starting OCR simulation...");
-        if (displayText != null) displayText.text = "Initializing OCR...";
-        
-        _tesseractDriver.Setup(OnTesseractSetupComplete);
-
-        while (isProcessing)
-        {
-            yield return null;
-        }
-
-        yield return new WaitForSeconds(0.5f); 
+        // ── Setelah OCR selesai (atau skip), panggil Analyze ─────────
+        yield return new WaitForSeconds(0.5f);
 
         if (analyzePageManager != null)
         {
             List<float> parsedOCR = ParsingOcrOutput();
-            // Analyze and Show Vertical Bar
             analyzePageManager.parsedOCR = parsedOCR;
-            analyzePageManager.ShowVerticalBar();
+            analyzePageManager.ShowVerticalBar();   // ← tampilkan vertical bar
 
-            snapshotButton.gameObject.SetActive(false);
-            analyzeButton.gameObject.SetActive(true);
+            // Tampilkan AnalyzeButton setelah scan selesai
+            if (analyzeButton != null)
+                analyzeButton.gameObject.SetActive(true);
+            if (snapshotButton != null)
+                snapshotButton.gameObject.SetActive(false);
         }
         else
         {
-            Debug.LogError("AnalyzePageManager is not assigned in the Inspector!");
+            Debug.LogError("[NutriLens] AnalyzePageManager belum di-assign di Inspector!");
         }
     }
 
