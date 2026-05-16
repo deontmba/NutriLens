@@ -238,7 +238,7 @@ public class Scan : MonoBehaviour
     {
         List<float> numbers = new();
         /*
-         * TODO (Wilson): Parsing OCR Output
+         * TODO (Gideon): Parsing OCR Output
          * List[0] -> Gula
          * List[1] -> Garam
          * List[2] -> Lemak
