@@ -118,15 +118,27 @@ public class ARVisualizationManager : MonoBehaviour
 
     private void PlayMascotAnimation(int emotionState)
     {
-        // 0 = Idle, 1 = Senang (Healthy), 2 = Lesu (tidak sehat)
         if (mascotAnimator == null)
         {
-            Debug.LogWarning("[NutriLens] mascotAnimator belum di-assign di Inspector!");
+            Debug.LogWarning("[NutriLens] mascotAnimator belum di-assign!");
             return;
         }
 
-        mascotAnimator.SetInteger("emotionState", emotionState);
-        Debug.Log("[NutriLens] Mascot animasi emotionState = " + emotionState);
+        if (emotionState == 1) // Senang
+        {
+            mascotAnimator.SetBool("kondisiHappy", true);
+            mascotAnimator.SetBool("kondisiAngry", false);
+        }
+        else if (emotionState == 2) // Lesu/Marah
+        {
+            mascotAnimator.SetBool("kondisiHappy", false);
+            mascotAnimator.SetBool("kondisiAngry", true);
+        }
+        else // Idle / Reset
+        {
+            mascotAnimator.SetBool("kondisiHappy", false);
+            mascotAnimator.SetBool("kondisiAngry", false);
+        }
     }
 
     // ─── Audio ────────────────────────────────────────────────────
