@@ -14,6 +14,7 @@ public class Scan : MonoBehaviour
     public TextMeshProUGUI displayText;
     public RectTransform scanArea;
     public Analyze analyzePageManager;
+    public ARVisualizationManager arVisualizationManager;
 
     private bool isProcessing = false;
     private TesseractDriver _tesseractDriver;
@@ -160,6 +161,9 @@ public class Scan : MonoBehaviour
             analyzePageManager.parsedOCR = parsedOCR;
             analyzePageManager.ShowVerticalBar();   // ← tampilkan vertical bar
 
+            if (arVisualizationManager != null)
+            arVisualizationManager.currentStatus = analyzePageManager.currentStatus;
+
             // Tampilkan AnalyzeButton setelah scan selesai
             if (analyzeButton != null)
                 analyzeButton.gameObject.SetActive(true);
@@ -236,16 +240,83 @@ public class Scan : MonoBehaviour
 
     private List<float> ParsingOcrOutput()
     {
-        List<float> numbers = new();
-        /*
-         * TODO (Gideon): Parsing OCR Output
-         * List[0] -> Gula
-         * List[1] -> Garam
-         * List[2] -> Lemak
-         * Fallback -> all 0.f
-        */
-        // _lastScannedText
+        List<float> numbers = new List<float> { 0f, 0f, 0f };
+
+        if (string.IsNullOrEmpty(_lastScannedText))
+        return numbers;
+
+        string[] gulaSynonyms = {
+            "gula", "sugar", "sugars", "total sugars", "added sugars",
+            "sukrosa", "glukosa", "fruktosa", "dekstrosa", "galaktosa",
+            "maltosa", "laktosa", "sukrosa", "sirup jagung", "madu",
+            "brown sugar", "raw sugar", "sucrose", "glucose", "fructose"
+        };
+
+        string[] garamSynonyms = {
+            "natrium", "sodium", "garam", "salt", "nacl",
+            "msg", "monosodium", "natrium klorida", "natrium benzoat",
+            "natrium bikarbonat", "baking soda", "baking powder"
+        };
+
+        string[] lemakSynonyms = {
+            "lemak jenuh", "saturated fat", "saturated", "sat. fat", "sat fat",
+            "minyak kelapa", "minyak sawit", "mentega", "margarin",
+            "shortening", "lemak hewani", "partially hydrogenated"
+        };
+
+        string cleanText = _lastScannedText.ToLower();
+        cleanText = System.Text.RegularExpressions.Regex.Replace(
+            cleanText, @"[|\\{}\[\]@#$%^&*_=+<>]", " "
+        );
+
+        string[] lines = cleanText.Split(
+            new char[] { '\n', '\r' },
+            System.StringSplitOptions.RemoveEmptyEntries
+        );
+
+        foreach (string line in lines)
+        {
+            string trimmed = line.Trim();
+
+            bool isGula  = ContainsAny(trimmed, gulaSynonyms);
+            bool isGaram = ContainsAny(trimmed, garamSynonyms);
+            bool isLemak = ContainsAny(trimmed, lemakSynonyms);
+
+            if (!isGula && !isGaram && !isLemak) continue;
+
+            var matches = System.Text.RegularExpressions.Regex.Matches(
+                trimmed, @"(\d+(?:[.,]\d+)?)\s*(?:g|mg|%|kcal|kkal)?"
+            );
+
+            if (matches.Count == 0) continue;
+
+            float value = 0f;
+            foreach (System.Text.RegularExpressions.Match m in matches)
+            {
+                string numStr = m.Groups[1].Value.Replace(",", ".");
+                if (float.TryParse(
+                    numStr,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out value))
+                    break;
+            }
+
+            if (isGula  && value > numbers[0]) numbers[0] = value;
+            if (isGaram && value > numbers[1]) numbers[1] = value;
+            if (isLemak && value > numbers[2]) numbers[2] = value;
+        }
+
+        Debug.Log("[NutriLens] Parsed → Gula: " + numbers[0] +
+                " | Natrium: " + numbers[1] +
+                " | Lemak: " + numbers[2]);
 
         return numbers;
     }
+
+    private bool ContainsAny(string text, string[] keywords)
+{
+    foreach (string keyword in keywords)
+        if (text.Contains(keyword)) return true;
+    return false;
 }
