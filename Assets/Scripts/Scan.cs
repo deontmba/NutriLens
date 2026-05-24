@@ -315,8 +315,9 @@ public class Scan : MonoBehaviour
     }
 
     private bool ContainsAny(string text, string[] keywords)
-{
-    foreach (string keyword in keywords)
-        if (text.Contains(keyword)) return true;
-    return false;
+    {
+        foreach (string keyword in keywords)
+            if (text.Contains(keyword)) return true;
+        return false;
+    }
 }
