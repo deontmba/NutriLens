@@ -29,40 +29,47 @@ public class Analyze : MonoBehaviour
     // TODO (Gideon): Process the parsedOCR data (change the function type as needed)
     private NutritionResult AnalyzeData()
     {
-        // This is only mock data, since we haven't implemented the OCR parsing (modify the value as you want for testing)
-        parsedOCR = new List<float> {8000f, 250f, 3f};
+        if (parsedOCR == null || parsedOCR.Count < 3)
+            parsedOCR = new List<float> { 0f, 0f, 0f };
 
-        int redCount    = 0;
-        int yellowCount = 0;
-        
-        /* NOTE:         
-         * List[0] -> Gula
-         * List[1] -> Garam
-         * List[2] -> Lemak
-        */
+        float gula   = parsedOCR[0]; // gram
+        float natrium = parsedOCR[1]; // mg
+        float lemak  = parsedOCR[2]; // gram
 
-        // - Gula (batas harian: 50g)
-        // Hijau: ≤ 5g | Kuning: 5–10g | Merah: > 10g
-        if (parsedOCR[0] > 10f)      redCount++;
-        else if (parsedOCR[0] > 5f)  yellowCount++;
+        // Cek masing-masing apakah masuk zona merah
+        bool gulaRed   = gula   > 10f;
+        bool natriumRed = natrium > 400f;
+        bool lemakRed  = lemak  > 4f;
 
-        // - Garam/Natrium (batas harian: 2000mg)
-        // Hijau: ≤ 200mg | Kuning: 200–400mg | Merah: > 400mg
-        if (parsedOCR[1] > 400f)      redCount++;
-        else if (parsedOCR[1] > 200f) yellowCount++;
+        // Kalori estimasi sederhana
+        // Kalori dari gula: 4 kcal/g, lemak: 9 kcal/g
+        float estimasiKalori = (gula * 4f) + (lemak * 9f);
+        bool kaloriTinggi = estimasiKalori > 200f;
 
-        // - Lemak Jenuh (batas harian: 22g)
-        // Hijau: ≤ 2g | Kuning: 2–4g | Merah: > 4g
-        if (parsedOCR[2] > 4f)      redCount++;
-        else if (parsedOCR[2] > 2f) yellowCount++;
-
-        // Status dominan
-        if (redCount >= 1)                        
+        // Prioritas: cek nutrisi mana yang paling dominan buruk
+        // Kalau semuanya aman → Healthy
+        if (!gulaRed && !natriumRed && !lemakRed && !kaloriTinggi)
             return NutritionResult.Healthy;
-        else if (yellowCount >= 2) 
+
+        // Cari yang paling tinggi relatif terhadap threshold-nya
+        float gulaRatio   = gula    / 10f;
+        float natriumRatio = natrium / 400f;
+        float lemakRatio  = lemak   / 4f;
+        float kaloriRatio = estimasiKalori / 200f;
+
+        // Return berdasarkan ratio tertinggi
+        float maxRatio = Mathf.Max(gulaRatio, natriumRatio, lemakRatio, kaloriRatio);
+
+        if (maxRatio == kaloriRatio && kaloriTinggi)
+            return NutritionResult.HighCalories;
+        else if (maxRatio == gulaRatio && gulaRed)
+            return NutritionResult.HighSugar;
+        else if (maxRatio == natriumRatio && natriumRed)
+            return NutritionResult.HighSalt;
+        else if (maxRatio == lemakRatio && lemakRed)
+            return NutritionResult.HighFat;
+        else
             return NutritionResult.Healthy;
-        else                                       
-        return NutritionResult.Healthy;
 
         // The Range for gula, garam, and lemak was written in our Report's Core Mechanic Section 
         // (https://docs.google.com/document/d/1XChqsG0PHlAG1cEluaOARZ-S-31r37AsXN7Ufp355MI/edit?usp=sharing)
@@ -71,29 +78,31 @@ public class Analyze : MonoBehaviour
     public void ShowVerticalBar()
     {
         // 1. Get the data first (Save analyzed data output on this class Variable so other function can access it)
-        currentStatus = AnalyzeData(); 
+        currentStatus = AnalyzeData();
+
+    // Kirim hasil ke ARVisualizationManager
+    if (aRVisualizationManager != null)
         aRVisualizationManager.currentStatus = currentStatus;
 
-        // 2. Add your UI trigger and animation logic here
-        if (verticalBarObject != null)
-            verticalBarObject.SetActive(true);
+    if (verticalBarObject != null)
+        verticalBarObject.SetActive(true);
 
-        // Tentukan target posisi pointer berdasarkan status gizi
-        float targetY = pointerPosSedang;
-        if (currentStatus == NutritionResult.Healthy)
-            targetY = pointerPosSehat;
-        else if (currentStatus == NutritionResult.Healthy)
-            targetY = pointerPosTidakSehat;
+    float targetY = pointerPosSedang;
+    if (currentStatus == NutritionResult.Healthy)
+        targetY = pointerPosSehat;
+    else if (currentStatus == NutritionResult.HighSugar ||
+             currentStatus == NutritionResult.HighSalt  ||
+             currentStatus == NutritionResult.HighFat   ||
+             currentStatus == NutritionResult.HighCalories)
+        targetY = pointerPosTidakSehat;
 
-        // Animasi pointer bergerak ke posisi target
-        if (pointerRect != null)
-            StartCoroutine(MovePointer(targetY));
+    if (pointerRect != null)
+        StartCoroutine(MovePointer(targetY));
 
-        // Log untuk debugging
-        Debug.Log("[NutriLens] Status: " + currentStatus + 
-          " | Gula: " + parsedOCR[0] + "g" +
-          " | Natrium: " + parsedOCR[1] + "mg" +
-          " | Lemak: " + parsedOCR[2] + "g");
+    Debug.Log("[NutriLens] Status: " + currentStatus +
+              " | Gula: " + parsedOCR[0] + "g" +
+              " | Natrium: " + parsedOCR[1] + "mg" +
+              " | Lemak: " + parsedOCR[2] + "g");
     }
 
     // Animasi pointer bergerak smooth ke posisi target (kalo perlu ya)

@@ -464,6 +464,7 @@ MonoBehaviour:
   displayText: {fileID: 1119712774}
   scanArea: {fileID: 575791184}
   analyzePageManager: {fileID: 852359522}
+  arVisualizationManager: {fileID: 207858491}
 --- !u!114 &393794387
 MonoBehaviour:
   m_ObjectHideFlags: 0
