@@ -11,7 +11,7 @@ public class TesseractWrapper
     private const string LeptonicaDllName = "tesseract";
 #elif UNITY_ANDROID
     private const string TesseractDllName = "libtesseract.so";
-    private const string LeptonicaDllName = "liblept.so";
+    private const string LeptonicaDllName = "libleptonica.so";
 #else
     private const string TesseractDllName = "tesseract";
     private const string LeptonicaDllName = "tesseract";

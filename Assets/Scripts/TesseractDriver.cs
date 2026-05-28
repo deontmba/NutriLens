@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Networking;
 
 public class TesseractDriver
 {
@@ -41,6 +42,7 @@ public class TesseractDriver
 
     public void OcrSetup(UnityAction onSetupComplete)
     {
+        Debug.Log("[OCR] OcrSetup called");
         _tesseract = new TesseractWrapper();
 
 #if UNITY_EDITOR
@@ -51,7 +53,7 @@ public class TesseractDriver
         string datapath = Path.Combine(Application.streamingAssetsPath, "tessdata");
 #endif
 
-        if (_tesseract.Init("eng", datapath))
+        if (_tesseract.Init("eng+ind", datapath))
         {
             Debug.Log("Init Successful");
             onSetupComplete?.Invoke();
@@ -59,40 +61,55 @@ public class TesseractDriver
         else
         {
             Debug.LogError(_tesseract.GetErrorMessage());
+            Debug.LogError("[OCR] Init FAILED: " + _tesseract.GetErrorMessage());
         }
     }
 
     private async void CopyAllFilesToPersistentData(List<string> fileNames, UnityAction onSetupComplete)
     {
-        String fromPath = "jar:file://" + Application.dataPath + "!/assets/";
-        String toPath = Application.persistentDataPath + "/";
-
-        foreach (String fileName in fileNames)
+        try
         {
-            if (!File.Exists(toPath + fileName))
-            {
-                Debug.Log("Copying from " + fromPath + fileName + " to " + toPath);
-                WWW www = new WWW(fromPath + fileName);
+            string fromPath = "jar:file://" + Application.dataPath + "!/assets/";
+            string toPath = Application.persistentDataPath + "/";
 
-                while (!www.isDone)
+            foreach (string fileName in fileNames)
+            {
+                if (!File.Exists(toPath + fileName))
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(Time.deltaTime));
+                    Debug.Log("[OCR] Copying: " + fromPath + fileName);
+
+                    using (UnityWebRequest www = UnityWebRequest.Get(fromPath + fileName))
+                    {
+                        var operation = www.SendWebRequest();
+                        while (!operation.isDone)
+                            await Task.Yield();
+
+                        if (www.result != UnityWebRequest.Result.Success)
+                        {
+                            Debug.LogError("[OCR] Copy FAILED: " + www.error);
+                            return;
+                        }
+
+                        File.WriteAllBytes(toPath + fileName, www.downloadHandler.data);
+                        Debug.Log("[OCR] Copy done: " + toPath + fileName);
+                    }
+
+                    UnZipData(fileName);
                 }
-
-                File.WriteAllBytes(toPath + fileName, www.bytes);
-                Debug.Log("File copy done");
-                www.Dispose();
-                www = null;
-            }
-            else
-            {
-                Debug.Log("File exists! " + toPath + fileName);
+                else
+                {
+                    Debug.Log("[OCR] File already exists: " + toPath + fileName);
+                }
             }
 
-            UnZipData(fileName);
+            Debug.Log("[OCR] Calling OcrSetup...");
+            OcrSetup(onSetupComplete);
         }
-
-        OcrSetup(onSetupComplete);
+        catch (Exception e)
+        {
+            // This is what was silently killing your flow before
+            Debug.LogError("[OCR] CopyAllFilesToPersistentData EXCEPTION: " + e.Message + "\n" + e.StackTrace);
+        }
     }
 
     public string GetErrorMessage()
