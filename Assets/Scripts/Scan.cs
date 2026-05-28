@@ -135,7 +135,7 @@ public class Scan : MonoBehaviour
             _tesseractDriver.Setup(OnTesseractSetupComplete);
 
             // Timeout 10 detik
-            float timeout = 10f;
+            float timeout = 60f;
             float elapsed = 0f;
             while (isProcessing && elapsed < timeout)
             {
