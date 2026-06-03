@@ -44,25 +44,27 @@ public class Analyze : MonoBehaviour
         // Kalori estimasi sederhana
         // Kalori dari gula: 4 kcal/g, lemak: 9 kcal/g
         float estimasiKalori = (gula * 4f) + (lemak * 9f);
-        bool kaloriTinggi = estimasiKalori > 200f;
+        // bool kaloriTinggi = estimasiKalori > 400f;
 
         // Prioritas: cek nutrisi mana yang paling dominan buruk
         // Kalau semuanya aman → Healthy
-        if (!gulaRed && !natriumRed && !lemakRed && !kaloriTinggi)
+        // if (!gulaRed && !natriumRed && !lemakRed && !kaloriTinggi)
+        if (!gulaRed && !natriumRed && !lemakRed)
             return NutritionResult.Healthy;
 
         // Cari yang paling tinggi relatif terhadap threshold-nya
         float gulaRatio   = gula    / 10f;
         float natriumRatio = natrium / 400f;
         float lemakRatio  = lemak   / 4f;
-        float kaloriRatio = estimasiKalori / 200f;
+        // float kaloriRatio = estimasiKalori / 400f;
 
         // Return berdasarkan ratio tertinggi
-        float maxRatio = Mathf.Max(gulaRatio, natriumRatio, lemakRatio, kaloriRatio);
+        // float maxRatio = Mathf.Max(gulaRatio, natriumRatio, lemakRatio, kaloriRatio);
+        float maxRatio = Mathf.Max(gulaRatio, natriumRatio, lemakRatio);
 
-        if (maxRatio == kaloriRatio && kaloriTinggi)
-            return NutritionResult.HighCalories;
-        else if (maxRatio == gulaRatio && gulaRed)
+        // if (maxRatio == kaloriRatio && kaloriTinggi)
+            // return NutritionResult.HighCalories;
+        if (maxRatio == gulaRatio && gulaRed)
             return NutritionResult.HighSugar;
         else if (maxRatio == natriumRatio && natriumRed)
             return NutritionResult.HighSalt;
