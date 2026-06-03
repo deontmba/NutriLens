@@ -46,6 +46,7 @@ public class Scan : MonoBehaviour
     private IEnumerator CaptureAndProcess()
     {
         isProcessing = true;
+        _lastScannedText = "";
         SetUILoading(true);
         yield return new WaitForEndOfFrame();
 
@@ -158,6 +159,7 @@ public class Scan : MonoBehaviour
         if (analyzePageManager != null)
         {
             List<float> parsedOCR = ParsingOcrOutput();
+            UpdateParsedDisplay(parsedOCR);
             analyzePageManager.parsedOCR = parsedOCR;
             analyzePageManager.ShowVerticalBar();   // ← tampilkan vertical bar
 
@@ -205,12 +207,11 @@ public class Scan : MonoBehaviour
     private void OnTesseractSetupComplete()
     {
         string result = _tesseractDriver.Recognize(_textureToProcess);
+        _lastScannedText = result;
 
-        
         if (displayText != null)
         {
-            displayText.text = "OCR Result:\n" + result;
-           _lastScannedText = result;
+            displayText.text = "Parsing nutrition values...";
         }
 
         Debug.Log("OCR Result: " + result);
@@ -221,6 +222,21 @@ public class Scan : MonoBehaviour
         SetUILoading(false);
         
         Debug.Log("OCR Finished. Ready for next scan.");
+    }
+
+    private void UpdateParsedDisplay(List<float> parsedOCR)
+    {
+        if (displayText == null) return;
+
+        float gula = parsedOCR != null && parsedOCR.Count > 0 ? parsedOCR[0] : 0f;
+        float garam = parsedOCR != null && parsedOCR.Count > 1 ? parsedOCR[1] : 0f;
+        float minyak = parsedOCR != null && parsedOCR.Count > 2 ? parsedOCR[2] : 0f;
+
+        displayText.text =
+            "Hasil Parse:\n" +
+            "Gula: " + gula.ToString("0.##") + " g\n" +
+            "Garam: " + garam.ToString("0.##") + " mg\n" +
+            "Minyak: " + minyak.ToString("0.##") + " g";
     }
     
     private void SaveTextureForDebug(Texture2D texture, string fileName)
