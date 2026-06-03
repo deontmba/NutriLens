@@ -259,25 +259,77 @@ public class Scan : MonoBehaviour
         List<float> numbers = new List<float> { 0f, 0f, 0f };
 
         if (string.IsNullOrEmpty(_lastScannedText))
-        return numbers;
+            return numbers;
 
         string[] gulaSynonyms = {
-            "gula", "sugar", "sugars", "total sugars", "added sugars",
-            "sukrosa", "glukosa", "fruktosa", "dekstrosa", "galaktosa",
-            "maltosa", "laktosa", "sukrosa", "sirup jagung", "madu",
-            "brown sugar", "raw sugar", "sucrose", "glucose", "fructose"
+            // Indonesian
+            "gula", "gula total", "gula tambahan", "gula pasir", "gula merah",
+            "gula aren", "gula kelapa", "gula tebu", "gula bit", "gula halus",
+            "sirup jagung", "sirup glukosa", "sirup fruktosa", "sirup maltosa",
+            "sirup maple", "sirup beras", "sirup agave", "madu", "molase",
+            "treacle", "dekstrosa", "glukosa", "fruktosa", "sukrosa", "laktosa",
+            "maltosa", "galaktosa", "ribosa",
+
+            // English
+            "sugar", "sugars", "total sugar", "total sugars",
+            "added sugar", "added sugars", "free sugars",
+            "sucrose", "glucose", "fructose", "dextrose", "lactose",
+            "maltose", "galactose", "ribose", "trehalose", "mannose",
+            "corn syrup", "high fructose corn syrup", "hfcs",
+            "glucose syrup", "fructose syrup", "malt syrup", "rice syrup",
+            "agave syrup", "agave nectar", "maple syrup", "honey",
+            "molasses", "brown sugar", "raw sugar", "cane sugar",
+            "beet sugar", "coconut sugar", "palm sugar", "invert sugar",
+            "fruit juice concentrate", "cane juice", "evaporated cane juice",
+            "turbinado", "demerara", "muscovado", "panela", "rapadura",
+            "icing sugar", "powdered sugar", "confectioners sugar",
         };
 
         string[] garamSynonyms = {
-            "natrium", "sodium", "garam", "salt", "nacl",
-            "msg", "monosodium", "natrium klorida", "natrium benzoat",
-            "natrium bikarbonat", "baking soda", "baking powder"
+            // Indonesian
+            "natrium", "garam", "garam dapur", "garam laut", "garam himalaya",
+            "natrium klorida", "natrium benzoat", "natrium nitrat", "natrium nitrit",
+            "natrium fosfat", "natrium sitrat", "natrium asetat", "natrium laktat",
+            "natrium glutamat", "msg", "monosodium glutamat",
+            "natrium bikarbonat", "soda kue", "baking soda",
+            "natrium sulfat", "natrium alginat", "natrium kaseinat",
+            "natrium askorbat", "garam mineral",
+
+            // English
+            "sodium", "salt", "nacl", "sea salt", "himalayan salt", "rock salt",
+            "sodium chloride", "sodium benzoate", "sodium nitrate", "sodium nitrite",
+            "sodium phosphate", "sodium citrate", "sodium acetate", "sodium lactate",
+            "sodium glutamate", "monosodium glutamate", "msg",
+            "sodium bicarbonate", "baking soda", "baking powder",
+            "sodium sulfate", "sodium alginate", "sodium caseinate",
+            "sodium ascorbate", "sodium erythorbate", "sodium stearoyl",
+            "sodium hydroxide", "disodium", "trisodium",
         };
 
         string[] lemakSynonyms = {
-            "lemak jenuh", "saturated fat", "saturated", "sat. fat", "sat fat",
-            "minyak kelapa", "minyak sawit", "mentega", "margarin",
-            "shortening", "lemak hewani", "partially hydrogenated"
+            // Indonesian
+            "lemak", "lemak total", "lemak jenuh", "lemak tak jenuh",
+            "lemak tak jenuh tunggal", "lemak tak jenuh ganda",
+            "lemak trans", "lemak hewani", "lemak nabati",
+            "minyak", "minyak kelapa", "minyak sawit", "minyak jagung",
+            "minyak kedelai", "minyak bunga matahari", "minyak kanola",
+            "minyak zaitun", "minyak ikan", "minyak nabati terhidrogenasi",
+            "mentega", "margarin", "shortening", "lemak babi", "gajih",
+            "santan", "krim", "lemak susu", "lemak kakao",
+
+            // English
+            "fat", "fats", "total fat", "fat total",
+            "saturated fat", "saturated fats", "saturated fatty acid",
+            "unsaturated fat", "monounsaturated fat", "polyunsaturated fat",
+            "trans fat", "trans fatty acid", "hydrogenated fat",
+            "partially hydrogenated", "fully hydrogenated",
+            "animal fat", "vegetable fat", "plant fat",
+            "oil", "palm oil", "coconut oil", "corn oil",
+            "soybean oil", "sunflower oil", "canola oil", "rapeseed oil",
+            "olive oil", "fish oil", "lard", "tallow", "suet",
+            "butter", "margarine", "shortening", "ghee",
+            "cream", "milk fat", "dairy fat", "cocoa butter",
+            "sat. fat", "sat fat", "mono fat", "poly fat",
         };
 
         string cleanText = _lastScannedText.ToLower();
@@ -300,23 +352,25 @@ public class Scan : MonoBehaviour
 
             if (!isGula && !isGaram && !isLemak) continue;
 
-            var matches = System.Text.RegularExpressions.Regex.Matches(
-                trimmed, @"(\d+(?:[.,]\d+)?)\s*(?:g|mg|%|kcal|kkal)?"
+            // Match number immediately followed by a unit (required)
+            var match = System.Text.RegularExpressions.Regex.Match(
+                trimmed, @"(\d+(?:[.,]\d+)?)\s*(mg|g)\b"
             );
 
-            if (matches.Count == 0) continue;
+            if (!match.Success) continue;
 
-            float value = 0f;
-            foreach (System.Text.RegularExpressions.Match m in matches)
-            {
-                string numStr = m.Groups[1].Value.Replace(",", ".");
-                if (float.TryParse(
+            string numStr = match.Groups[1].Value.Replace(",", ".");
+            string unit   = match.Groups[2].Value;
+
+            if (!float.TryParse(
                     numStr,
                     System.Globalization.NumberStyles.Float,
                     System.Globalization.CultureInfo.InvariantCulture,
-                    out value))
-                    break;
-            }
+                    out float value))
+                continue;
+
+            // Normalize mg → g
+            if (unit == "mg") value /= 1000f;
 
             if (isGula  && value > numbers[0]) numbers[0] = value;
             if (isGaram && value > numbers[1]) numbers[1] = value;
