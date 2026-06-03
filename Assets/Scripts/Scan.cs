@@ -234,9 +234,9 @@ public class Scan : MonoBehaviour
 
         displayText.text =
             "Hasil Parse:\n" +
-            "Gula: " + gula.ToString("0.##") + " g\n" +
-            "Garam: " + garam.ToString("0.##") + " mg\n" +
-            "Minyak: " + minyak.ToString("0.##") + " g";
+            "Gula: " + gula + " g\n" +
+            "Garam: " + garam + " mg\n" +
+            "Minyak: " + minyak + " g";
     }
     
     private void SaveTextureForDebug(Texture2D texture, string fileName)
