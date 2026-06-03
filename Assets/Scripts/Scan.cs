@@ -346,35 +346,23 @@ public class Scan : MonoBehaviour
         {
             string trimmed = line.Trim();
 
-            bool isGula  = ContainsAny(trimmed, gulaSynonyms);
-            bool isGaram = ContainsAny(trimmed, garamSynonyms);
-            bool isLemak = ContainsAny(trimmed, lemakSynonyms);
+            if (TryExtractValueNearKeywords(trimmed, gulaSynonyms, out float gulaValue) &&
+                gulaValue > numbers[0])
+            {
+                numbers[0] = gulaValue;
+            }
 
-            if (!isGula && !isGaram && !isLemak) continue;
+            if (TryExtractValueNearKeywords(trimmed, garamSynonyms, out float garamValue) &&
+                garamValue > numbers[1])
+            {
+                numbers[1] = garamValue;
+            }
 
-            // Match number immediately followed by a unit (required)
-            var match = System.Text.RegularExpressions.Regex.Match(
-                trimmed, @"(\d+(?:[.,]\d+)?)\s*(mg|g)\b"
-            );
-
-            if (!match.Success) continue;
-
-            string numStr = match.Groups[1].Value.Replace(",", ".");
-            string unit   = match.Groups[2].Value;
-
-            if (!float.TryParse(
-                    numStr,
-                    System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    out float value))
-                continue;
-
-            // // Normalize mg → g
-            // if (unit == "mg") value /= 1000f;
-
-            if (isGula  && value > numbers[0]) numbers[0] = value;
-            if (isGaram && value > numbers[1]) numbers[1] = value;
-            if (isLemak && value > numbers[2]) numbers[2] = value;
+            if (TryExtractValueNearKeywords(trimmed, lemakSynonyms, out float lemakValue) &&
+                lemakValue > numbers[2])
+            {
+                numbers[2] = lemakValue;
+            }
         }
 
         Debug.Log("[NutriLens] Parsed → Gula: " + numbers[0] +
@@ -384,10 +372,46 @@ public class Scan : MonoBehaviour
         return numbers;
     }
 
-    private bool ContainsAny(string text, string[] keywords)
+    private bool TryExtractValueNearKeywords(string text, string[] keywords, out float value)
     {
+        value = 0f;
+
         foreach (string keyword in keywords)
-            if (text.Contains(keyword)) return true;
+        {
+            string escapedKeyword = System.Text.RegularExpressions.Regex.Escape(keyword);
+
+            var afterKeywordMatch = System.Text.RegularExpressions.Regex.Match(
+                text,
+                $@"\b{escapedKeyword}\b[^\d]{{0,24}}(\d+(?:[.,]\d+)?)"
+            );
+
+            if (TryParseMatchedNumber(afterKeywordMatch, out value))
+                return true;
+
+            var beforeKeywordMatch = System.Text.RegularExpressions.Regex.Match(
+                text,
+                $@"(\d+(?:[.,]\d+)?)[^\da-zA-Z]{{0,24}}\b{escapedKeyword}\b"
+            );
+
+            if (TryParseMatchedNumber(beforeKeywordMatch, out value))
+                return true;
+        }
+
         return false;
+    }
+
+    private bool TryParseMatchedNumber(System.Text.RegularExpressions.Match match, out float value)
+    {
+        value = 0f;
+
+        if (!match.Success) return false;
+
+        string numStr = match.Groups[1].Value.Replace(",", ".");
+
+        return float.TryParse(
+            numStr,
+            System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out value);
     }
 }
