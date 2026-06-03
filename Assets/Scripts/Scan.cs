@@ -369,8 +369,8 @@ public class Scan : MonoBehaviour
                     out float value))
                 continue;
 
-            // Normalize mg → g
-            if (unit == "mg") value /= 1000f;
+            // // Normalize mg → g
+            // if (unit == "mg") value /= 1000f;
 
             if (isGula  && value > numbers[0]) numbers[0] = value;
             if (isGaram && value > numbers[1]) numbers[1] = value;
