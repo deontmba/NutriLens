@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using Vuforia;
 
 public enum NutritionResult
 {
@@ -14,6 +15,9 @@ public class ARVisualizationManager : MonoBehaviour
 {
     [Header("Demo Result")]
     public NutritionResult currentStatus;
+
+    [Header("Ground Plane Placement")]
+    [SerializeField] private PlaneFinderBehaviour planeFinder;
 
     [Header("3D AR Objects (di dalam ARContentRoot)")]
     public GameObject mascot;
@@ -50,6 +54,7 @@ public class ARVisualizationManager : MonoBehaviour
 
     private void Start()
     {
+        ResolveReferences();
         ResetScan();
     }
 
@@ -58,6 +63,9 @@ public class ARVisualizationManager : MonoBehaviour
     // Dipanggil saat tombol "Ketuk untuk Analisis" ditekan
     public void AnalyzeNutrition()
     {
+        ResolveReferences();
+        TryPlaceContentAtDetectedPlane();
+
         Debug.Log("[NutriLens] AnalyzeNutrition. Status = " + currentStatus);
 
         HideAllObjects();
@@ -112,6 +120,36 @@ public class ARVisualizationManager : MonoBehaviour
         if (scanArea != null)          scanArea.SetActive(true);
         if (text_tmp != null)          text_tmp.gameObject.SetActive(true);
         if (verticalBar != null)       verticalBar.SetActive(true);
+    }
+
+    private void ResolveReferences()
+    {
+        if (planeFinder == null)
+            planeFinder = FindObjectOfType<PlaneFinderBehaviour>();
+
+        if (arCamera == null)
+            arCamera = Camera.main;
+    }
+
+    private void TryPlaceContentAtDetectedPlane()
+    {
+        if (planeFinder == null)
+        {
+            Debug.LogWarning("[NutriLens] PlaneFinderBehaviour tidak ditemukan. Skip auto-place AR content.");
+            return;
+        }
+
+        Vector2 hitTestScreenPosition = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+        GameObject planeIndicator = planeFinder.PlaneIndicator;
+
+        if (planeIndicator != null && planeIndicator.activeInHierarchy && arCamera != null)
+        {
+            Vector3 indicatorScreenPoint = arCamera.WorldToScreenPoint(planeIndicator.transform.position);
+            if (indicatorScreenPoint.z > 0f)
+                hitTestScreenPosition = new Vector2(indicatorScreenPoint.x, indicatorScreenPoint.y);
+        }
+
+        planeFinder.PerformHitTest(hitTestScreenPosition);
     }
 
     // ─── Animasi Mascot ───────────────────────────────────────────
